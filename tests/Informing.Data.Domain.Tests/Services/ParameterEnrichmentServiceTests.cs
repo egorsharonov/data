@@ -6,6 +6,7 @@ using Informing.Data.Domain.Models.Parameters;
 using Informing.Data.Domain.Services;
 using Informing.Data.Domain.Services.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
 
 namespace Informing.Data.Domain.Tests.Services;
 
