@@ -1,21 +1,28 @@
 # Informing Parameter Service
 
-`Informing Parameter Service` — это .NET 8 worker-сервис, который обрабатывает Camunda external task по топику `portin-ext-data-enrich`.
+`Informing Parameter Service` — .NET 8 worker-сервис для Camunda external task `portin-ext-data-enrich`.
+
+## Как теперь определяется список параметров
+
+Список параметров **должен приходить из процесса через DMN**:
+
+1. В `portin-process.bpmn` перед шагом `Enrichment [Parameters Service]` вызывается `parameter_requirements_decision`.
+2. DMN записывает результат в переменную `requestedParameters`.
+3. Эта переменная пробрасывается как input в external task.
+4. Worker читает `requestedParameters` и запрашивает только эти параметры у провайдеров.
+
+Поддерживаемый формат `requestedParameters`:
+- JSON array, например `"[\"msisdn\",\"segment\"]"`;
+- либо CSV, например `msisdn,segment`.
 
 ## Что делает сервис
 
 На каждой итерации worker:
 1. Забирает задачи из Camunda (`fetchAndLock`) по топику parameter service.
-2. Извлекает переменные задачи:
-   - `orderId`
-   - `eventType`
-   - `requestedParameters` (опционально)
-3. Определяет, какие внешние параметры нужны:
-   - сначала берёт `requestedParameters` из задачи,
-   - если там пусто — пытается найти правила в конфиге `Infrastructure:Parameters:Resolution:EventTypeToParameters`,
-   - если и там нет — использует `DefaultParameters`.
-4. Для каждого ключа параметра ищет соответствующий `IExternalParameterProvider`.
-5. Собирает значения параметров и завершает task в Camunda, возвращая:
+2. Извлекает переменные задачи: `orderId`, `eventType`, `requestedParameters`.
+3. Для каждого ключа из `requestedParameters` ищет `IExternalParameterProvider`.
+4. Запрашивает значения параметров через провайдеры.
+5. Завершает task и возвращает:
    - `externalParameters`
    - `externalParametersRequested`
 
@@ -35,33 +42,18 @@ dotnet --info
 
 ---
 
-## Структура решения
-
-- `src/Informing.Data.Worker` — точка входа, background worker, hosting.
-- `src/Informing.Data.Domain` — бизнес-логика параметризации и обогащения.
-- `src/Informing.Data.Infrastructure` — Camunda клиент, конфигурация, healthcheck/observability.
-- `tests/Informing.Data.Domain.Tests` — unit-тесты domain-слоя.
-- `parameter_requirements_decision.dmn` — пример DMN для правил выбора параметров.
-
----
-
 ## Настройка конфигурации
 
 Основные секции в `src/Informing.Data.Worker/appsettings*.json`:
 
 - `Infrastructure:Camunda:PollingOptions`
-  - `BaseUrl` — базовый URL Camunda (без `/engine-rest` тоже допустимо).
-  - `NormalPollingInterval` — интервал опроса при успешной итерации.
-  - `ErrorPollingInterval` — интервал при ошибке.
+  - `BaseUrl`
+  - `NormalPollingInterval`
+  - `ErrorPollingInterval`
 - `Infrastructure:Camunda:WorkerOptions:ParameterService`
-  - `WorkerId`, `TopicName`, `LockDurationMs`, `MaxBatchTasks`, `RetriesOnFailure`, `TenantId`.
-- `Infrastructure:Parameters:Resolution`
-  - `EventTypeToParameters` — fallback-правила для `eventType`.
-  - `DefaultParameters` — fallback второго уровня.
+  - `WorkerId`, `TopicName`, `LockDurationMs`, `MaxBatchTasks`, `RetriesOnFailure`, `TenantId`
 
-### Быстрое переопределение через переменные окружения
-
-Пример для локального запуска:
+### Переопределение через env
 
 ```bash
 export Infrastructure__Camunda__PollingOptions__BaseUrl="http://localhost:8080"
@@ -70,71 +62,28 @@ export Infrastructure__Camunda__WorkerOptions__ParameterService__TopicName="port
 
 ---
 
-## Как собрать проект
-
-Из корня репозитория:
+## Сборка / тесты / запуск
 
 ```bash
 dotnet restore Informing.Data.sln
 dotnet build Informing.Data.sln -c Release --no-restore
-```
-
----
-
-## Как прогнать тесты
-
-### Все тесты
-
-```bash
 dotnet test Informing.Data.sln -c Release
-```
-
-### Только domain unit-тесты
-
-```bash
-dotnet test tests/Informing.Data.Domain.Tests/Informing.Data.Domain.Tests.csproj -c Release
-```
-
-Тесты покрывают:
-- выбор источника списка параметров в `ParameterRequirementsResolver`;
-- happy-path обработки задачи в `ParameterEnrichmentService`;
-- fail-path (если провайдер параметра не зарегистрирован).
-
----
-
-## Как запустить локально
-
-### Вариант 1: запуск из проекта worker
-
-```bash
 dotnet run --project src/Informing.Data.Worker/Informing.Data.Worker.csproj
 ```
-
-### Вариант 2: запуск через профиль `Development`
-
-```bash
-DOTNET_ENVIRONMENT=Development dotnet run --project src/Informing.Data.Worker/Informing.Data.Worker.csproj
-```
-
-После старта в логах должны появиться сообщения о запуске parameter worker и попытках опроса Camunda.
 
 ---
 
 ## Как добавить новый внешний параметр
 
-1. Добавь ключ параметра в BPMN/DMN (или передавай его в `requestedParameters`).
-2. Реализуй новый класс `IExternalParameterProvider`.
-3. Зарегистрируй реализацию в `AddExternalParameterProviders`.
-4. При необходимости добавь fallback-правила в `Infrastructure:Parameters:Resolution`.
-5. Добавь/обнови unit-тесты для новой логики.
+1. Добавь ключ параметра в `parameter_requirements_decision.dmn` для нужного `eventType`.
+2. Убедись, что BPMN пробрасывает `requestedParameters` в шаг `Enrichment [Parameters Service]`.
+3. Реализуй `IExternalParameterProvider` с `ParameterKey` этого ключа.
+4. Зарегистрируй провайдер в `AddExternalParameterProviders`.
+5. Добавь unit-тесты для провайдера/логики.
 
 ---
 
-## Docker (если нужен)
-
-В репозитории есть `Dockerfile` и `Dockerfile.dev`.
-
-Типовой сценарий:
+## Docker
 
 ```bash
 docker build -t informing-parameter-service -f Dockerfile .

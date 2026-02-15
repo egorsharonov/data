@@ -9,16 +9,9 @@ namespace Informing.Data.Domain.Tests.Services;
 public sealed class ParameterRequirementsResolverTests
 {
     [Fact]
-    public void Resolve_ReturnsRequestedParameters_FromTaskVariablesFirst()
+    public void Resolve_ReturnsRequestedParameters_FromTaskVariables()
     {
-        var resolver = CreateResolver(new ParameterResolutionOptions
-        {
-            EventTypeToParameters = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["sent-cdb"] = ["fromConfig"]
-            },
-            DefaultParameters = ["default"]
-        });
+        var resolver = new ParameterRequirementsResolver();
 
         var variables = new ParameterTaskVariables("order-1", "sent-cdb", ["requestedA", "requestedB"]);
 
@@ -28,41 +21,14 @@ public sealed class ParameterRequirementsResolverTests
     }
 
     [Fact]
-    public void Resolve_UsesEventTypeMapping_WhenNoRequestedParametersProvided()
+    public void Resolve_ReturnsEmptyList_WhenRequestedParametersAbsent()
     {
-        var resolver = CreateResolver(new ParameterResolutionOptions
-        {
-            EventTypeToParameters = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["sent-cdb"] = ["configA", "configB"]
-            },
-            DefaultParameters = ["default"]
-        });
+        var resolver = new ParameterRequirementsResolver();
 
         var variables = new ParameterTaskVariables("order-1", "sent-cdb", []);
 
         var resolved = resolver.Resolve(variables);
 
-        Assert.Equal(new[] { "configA", "configB" }, resolved);
-    }
-
-    [Fact]
-    public void Resolve_FallsBackToDefault_WhenNoRequestedAndNoEventMapping()
-    {
-        var resolver = CreateResolver(new ParameterResolutionOptions
-        {
-            DefaultParameters = ["defaultA"]
-        });
-
-        var variables = new ParameterTaskVariables("order-1", "unknown-event", []);
-
-        var resolved = resolver.Resolve(variables);
-
-        Assert.Equal(new[] { "defaultA" }, resolved);
-    }
-
-    private static ParameterRequirementsResolver CreateResolver(ParameterResolutionOptions options)
-    {
-        return new ParameterRequirementsResolver(Options.Create(options));
+        Assert.Empty(resolved);
     }
 }
