@@ -5,7 +5,6 @@ using Informing.Data.Domain.Enums;
 using Informing.Data.Infrastructure.Camunda.Clients;
 using Informing.Data.Infrastructure.Configuration;
 using Informing.Data.Infrastructure.Configuration.Camunda;
-using Informing.Data.Domain.Configuration.Parameters;
 using Informing.Data.Infrastructure.Observability.Instrumentation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +17,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddInfrastructureConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<CamundaPollingOptions>(configuration.GetRequiredSection("Infrastructure:Camunda:PollingOptions"));
-        services.Configure<ParameterResolutionOptions>(configuration.GetRequiredSection("Infrastructure:Parameters:Resolution"));
 
         services.AddKeyedSingleton<CamundaWorkerOptions>(serviceKey: CamundaWorkerTag.ParameterService,
             implementationFactory: (_, _) => configuration.GetCamundaOptions(CamundaWorkerTag.ParameterService));

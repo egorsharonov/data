@@ -69,20 +69,32 @@
       <bpmn:outgoing>Flow_1teddq1</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="Flow_1teddq1" sourceRef="Activity_DataEnrichment" targetRef="Activity_KafkaRestCall" />
+    <bpmn:businessRuleTask id="Activity_ParameterRequirementsDecision" name="Parameter requirements decision" camunda:resultVariable="requestedParameters" camunda:decisionRef="parameter_requirements_decision" camunda:mapDecisionResult="singleEntry">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="eventType">${eventType}</camunda:inputParameter>
+          <camunda:outputParameter name="requestedParameters">${requestedParameters}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0n7kzkk</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ai92r4</bpmn:outgoing>
+    </bpmn:businessRuleTask>
     <bpmn:serviceTask id="Activity_ExternalDataEnrichment" name="Enrichment [Parameters Service]" camunda:type="external" camunda:topic="portin-ext-data-enrich">
       <bpmn:extensionElements>
         <camunda:inputOutput>
           <camunda:inputParameter name="orderId">${orderId}</camunda:inputParameter>
           <camunda:inputParameter name="eventType">${eventType}</camunda:inputParameter>
+          <camunda:inputParameter name="requestedParameters">${requestedParameters}</camunda:inputParameter>
         </camunda:inputOutput>
         <camunda:failedJobRetryTimeCycle>R3/PT30S</camunda:failedJobRetryTimeCycle>
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0n7kzkk</bpmn:incoming>
+      <bpmn:incoming>Flow_0ai92r4</bpmn:incoming>
       <bpmn:outgoing>Flow_1s0oek1</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_0n7kzkk" name="Yes" sourceRef="Gateway_0shkwe5" targetRef="Activity_ExternalDataEnrichment">
+    <bpmn:sequenceFlow id="Flow_0n7kzkk" name="Yes" sourceRef="Gateway_0shkwe5" targetRef="Activity_ParameterRequirementsDecision">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${enrichWithExternalData == true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0ai92r4" sourceRef="Activity_ParameterRequirementsDecision" targetRef="Activity_ExternalDataEnrichment" />
     <bpmn:sequenceFlow id="Flow_1s0oek1" sourceRef="Activity_ExternalDataEnrichment" targetRef="Activity_DataEnrichment" />
     <bpmn:serviceTask id="Activity_KafkaRestCall" name="Send to Kafka" camunda:type="external" camunda:topic="kafka-rest-call">
       <bpmn:extensionElements>
@@ -149,6 +161,10 @@
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_ExternalDataEnrichment_di" bpmnElement="Activity_ExternalDataEnrichment">
+        <dc:Bounds x="1020" y="240" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ParameterRequirementsDecision_di" bpmnElement="Activity_ParameterRequirementsDecision">
         <dc:Bounds x="870" y="240" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
@@ -201,10 +217,14 @@
         <di:waypoint x="770" y="280" />
         <di:waypoint x="870" y="280" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1s0oek1_di" bpmnElement="Flow_1s0oek1">
+      <bpmndi:BPMNEdge id="Flow_0ai92r4_di" bpmnElement="Flow_0ai92r4">
         <di:waypoint x="970" y="280" />
-        <di:waypoint x="1015" y="280" />
-        <di:waypoint x="1015" y="160" />
+        <di:waypoint x="1020" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1s0oek1_di" bpmnElement="Flow_1s0oek1">
+        <di:waypoint x="1120" y="280" />
+        <di:waypoint x="1090" y="280" />
+        <di:waypoint x="1090" y="160" />
         <di:waypoint x="1060" y="160" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0d7x9zt_di" bpmnElement="Flow_0d7x9zt">
