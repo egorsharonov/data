@@ -1,0 +1,42 @@
+{
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console",
+      "Salsa.Common"
+    ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft.Hosting.Lifetime": "Information",
+        "Microsoft.Extensions.Hosting": "Information",
+        "Npgsql": "Information",
+        "Microsoft.Extensions.Diagnostics.HealthChecks": "Debug"
+      }
+    },
+    "WriteTo": {
+      "0": {
+        "Name": "Console",
+        "Args": {
+          "formatter": {
+            "type": "Salsa.Common.Observability.OceanObservabilityJsonFormatter, Salsa.Common"
+          }
+        }
+      }
+    }
+  },
+  "Observability": {
+    "ServiceName": "MNPHub.Informing.Data",
+    "Otlp": {
+      "Endpoint": "http://localhost:4317",
+      "TimeoutMilliseconds": 10000,
+      "UseHttp": false
+    },
+    "TCPHealthCheck": {
+      "StartupStepsThreshold": 1,
+      "Readiness": {
+        "ProbeFailureDelayMs": 1000
+      }
+    },
+    "FilterEmptyTasksSpans": true
+  }
+}

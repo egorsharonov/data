@@ -1,0 +1,10 @@
+include:
+  - project: "${CI_TOOLS_PROJECT}"
+    ref: "${CI_TOOLS_PROJECT_BRANCH}"
+    file: "${CI_TOOLS_PROJECT_FILE_DOTNET}"
+
+default:
+  tags:
+    - ocean
+    - client
+    - 0300s3

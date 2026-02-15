@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_FilteringService" name="Filtering Service" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.26.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <decision id="filtering_service" name="Message Filtering" camunda:historyTimeToLive="3">
+    <decisionTable id="DecisionTable_FilteringService" hitPolicy="FIRST">
+      <input id="Input_EventType" label="Event Type" camunda:inputVariable="eventType">
+        <inputExpression id="InputExpression_EventType" typeRef="string">
+          <text>eventType</text>
+        </inputExpression>
+      </input>
+      <output id="Output_MessageEnabled" label="Message Enabled" name="messageEnabled" typeRef="boolean" />
+      <rule id="DecisionRule_sent-cdb">
+        <inputEntry id="UnaryTests_sent-cdb">
+          <text>"sent-cdb"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_sent-cdb">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_cdb-rejected">
+        <inputEntry id="UnaryTests_cdb-rejected">
+          <text>"cdb-rejected"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_cdb-rejected">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_arbitration-pending">
+        <inputEntry id="UnaryTests_arbitration-pending">
+          <text>"arbitation-pending"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_arbitration-pending">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_donor-verification">
+        <inputEntry id="UnaryTests_donor-verification">
+          <text>"donor-verification"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_donor-verification">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_donor-rejected">
+        <inputEntry id="UnaryTests_donor-rejected">
+          <text>"donor-rejected"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_donor-rejected">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_debt-checking">
+        <inputEntry id="UnaryTests_debt-checking">
+          <text>"debt-checking"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_debt-checking">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_debt-collection">
+        <inputEntry id="UnaryTests_debt-collection">
+          <text>"debt-collection"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_debt-collection">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_portation-complete">
+        <inputEntry id="UnaryTests_portation-complete">
+          <text>"portation-complete"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_portation-complete">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_canceled">
+        <inputEntry id="UnaryTests_canceled">
+          <text>"canceled"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_canceled">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_default">
+        <inputEntry id="UnaryTests_default">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_default">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="filtering_service">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

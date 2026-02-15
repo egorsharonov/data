@@ -1,0 +1,36 @@
+{
+  "documentGenerator": {
+    "fromDocument": {
+      "json": "$(InputJson)"
+    },
+    "preprocessors": {
+      "jsonPatch": {
+        "patches": [
+          {
+            "op": "replace",
+            "path": "/paths/~1migration~1executeAsync/post/operationId",
+            "value": "executeMigrationPlanBatch"
+          },
+          {
+            "op": "replace",
+            "path": "/paths/~1modification~1executeAsync/post/operationId",
+            "value": "executeModificationBatch"
+          }
+        ]
+      }
+    }
+  },
+  "codeGenerators": {
+    "openApiToCSharpClient": {
+      "generateClientInterfaces": true,
+      "generateSyncMethods": false,
+      "operationAsyncSuffix": false,
+      "namespace": "Informing.Data.CamundaApiClient",
+      "excludedTypeNames": [ "AnyValue" ],
+      "additionalNamespaceUsages": [
+        "AnyValue = Newtonsoft.Json.Linq.JToken"
+      ]
+
+    }
+  }
+}

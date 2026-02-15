@@ -1,0 +1,17 @@
+{
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Debug",
+      "Override": {
+        "Microsoft.Hosting.Lifetime": "Information",
+        "Npgsql": "Debug"
+      }
+    }
+  },
+  "Observability": {
+    "Otlp": {
+      "Endpoint": "http://otel-collector:4317"
+    },
+    "FilterEmptyTasksSpans": true
+  }
+}
