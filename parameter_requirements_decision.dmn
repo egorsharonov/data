@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="Definitions_ParameterRequirements" name="Parameter Requirements" namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="parameter_requirements_decision" name="Parameter Requirements Decision" camunda:historyTimeToLive="3">
+    <decisionTable id="DecisionTable_ParameterRequirements" hitPolicy="FIRST">
+      <input id="Input_EventType" label="Event Type" camunda:inputVariable="eventType">
+        <inputExpression id="InputExpression_EventType" typeRef="string">
+          <text>eventType</text>
+        </inputExpression>
+      </input>
+      <output id="Output_RequestedParameters" label="Requested Parameters" name="requestedParameters" typeRef="string" />
+      <rule id="Rule_sent_cdb">
+        <inputEntry id="InputEntry_sent_cdb">
+          <text>"sent-cdb"</text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_sent_cdb">
+          <text>"[]"</text>
+        </outputEntry>
+      </rule>
+      <rule id="Rule_default">
+        <inputEntry id="InputEntry_default">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_default">
+          <text>"[]"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

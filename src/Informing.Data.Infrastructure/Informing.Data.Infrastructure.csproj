@@ -17,21 +17,8 @@
     <PackageReference Include="ApiCodeGenerator.Preprocessors.JsonPatch">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
-    <PackageReference Include="Dapper" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Http" />
-    <PackageReference Include="Npgsql" />
-    <PackageReference Include="Npgsql.DependencyInjection" />
-    <PackageReference Include="Npgsql.OpenTelemetry" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
     <PackageReference Include="Salsa.Common.OpenTelemetry" />
     <PackageReference Include="Salsa.Observability" />
-    <PackageReference Include="Serilog.Sinks.Console" />
   </ItemGroup>
 </Project>

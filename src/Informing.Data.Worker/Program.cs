@@ -15,12 +15,11 @@ public sealed class Program
 {
     public static async Task Main()
     {
-        var hostBuilder =
-        Host.CreateDefaultBuilder()
+        var hostBuilder = Host.CreateDefaultBuilder()
             .UseObservability(
                 setupTrace: (obsBuilder, traceBuilder) =>
                 {
-                    bool filterEmptyCamundaSpans = obsBuilder.Configuration.GetValue<bool>("Observability:FilterEmptyTasksSpans");
+                    var filterEmptyCamundaSpans = obsBuilder.Configuration.GetValue<bool>("Observability:FilterEmptyTasksSpans");
 
                     traceBuilder
                         .AddHttpClientInstrumentation(options =>
@@ -30,59 +29,30 @@ public sealed class Program
                                 options.EnrichWithHttpResponseMessage = WorkerInstrumentation.DetermineCamundaIgnorableTasks;
                             }
                         })
-                        .AddSource(
-                            names: [
-                                $"{CamundaWorkerTag.PortIn}-Worker",
-                                "Npgsql"
-                            ]
-                        );
+                        .AddSource($"{CamundaWorkerTag.ParameterService}-Worker");
 
                     if (filterEmptyCamundaSpans)
                     {
                         traceBuilder
-                            .AddProcessor(new FilteringProcessor(
-                                filter: WorkerInstrumentation.FilterEmptyCamundaTasksSpans
-                            ))
-                            .AddProcessor(new FilteringProcessor(
-                                filter: WorkerInstrumentation.FilterCamundaHealthcheckSpans
-                            ));
+                            .AddProcessor(new FilteringProcessor(WorkerInstrumentation.FilterEmptyCamundaTasksSpans))
+                            .AddProcessor(new FilteringProcessor(WorkerInstrumentation.FilterCamundaHealthcheckSpans));
                     }
-                }
-            )
+                })
             .ConfigureServices((hostContext, services) =>
             {
                 services
-                    .AddObservabilityInstrumentation(
-                        configration: hostContext.Configuration
-                    )
-                    .AddInfrastructureConfiguration(
-                        configuration: hostContext.Configuration
-                    )
-                    .AddDalInfrastructure(
-                        configuration: hostContext.Configuration,
-                        hostEnvironment: hostContext.HostingEnvironment
-                    )
-                    .AddDalRepositories()
-                    .AddCamundaClient(
-                        configuration: hostContext.Configuration
-                    )
+                    .AddObservabilityInstrumentation()
+                    .AddInfrastructureConfiguration(hostContext.Configuration)
+                    .AddCamundaClient(hostContext.Configuration)
+                    .AddExternalParameterProviders()
                     .AddDomainServices()
-                    .AddHostedService<PortInDataWorker>();
+                    .AddHostedService<ParameterWorker>();
 
                 services
                     .AddTCPHealthchecks()
-                    .AddCheck<CamundaHealthCheck>(
-                        name: "Camunda",
-                        failureStatus: HealthStatus.Unhealthy,
-                        timeout: TimeSpan.FromMilliseconds(5000)
-                    )
-                    .AddNpgSql(
-                        name: "MNP Portin DB"
-                    );
+                    .AddCheck<CamundaHealthCheck>("Camunda", HealthStatus.Unhealthy, TimeSpan.FromMilliseconds(5000));
             });
 
-        await hostBuilder
-                    .Build()
-                    .RunAsync();
+        await hostBuilder.Build().RunAsync();
     }
 }
