@@ -1,123 +1,92 @@
 using Informing.Data.CamundaApiClient;
 using Informing.Data.Domain.Contracts.Camunda.Dto;
 using Informing.Data.Domain.Exceptions.Infrastructure.Camunda;
-using Informing.Data.Domain.Models.PortIn.Common;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 namespace Informing.Data.Infrastructure.Camunda.Mappers;
 
 internal static class CamundaDtoMapper
 {
-    private static readonly JsonSerializerSettings _serializerSettings = new()
+    public static ParameterProcessTaskContainer MapToEnrichTask(this LockedExternalTaskDto taskDto, int retriesOnFailure)
     {
-        Converters = new List<JsonConverter>
-        {
-            new StringEnumConverter()
-        }
-    };
-
-    public static EnrichProcessTaskContainer MapToEnrichTask(this LockedExternalTaskDto taskDto, int retriesOnFailure)
-    {
-        string taskId = taskDto.Id;
+        var taskId = taskDto.Id;
         CamundaTaskInvalidVariableException? variableException = null;
-        CamundaEnrichmentVariables? taskVariablesModel;
+        ParameterTaskVariables? taskVariables;
 
         try
         {
-            taskVariablesModel = MapToVariablesModel(taskId, taskDto);
+            taskVariables = MapToVariablesModel(taskId, taskDto);
         }
         catch (CamundaTaskInvalidVariableException ex)
         {
-            taskVariablesModel = null;
+            taskVariables = null;
             variableException = ex;
         }
 
-        int retriesLeft = taskDto.Retries == null ? retriesOnFailure : (taskDto.Retries.Value - 1);
+        var retriesLeft = taskDto.Retries == null ? retriesOnFailure : taskDto.Retries.Value - 1;
 
-        return new EnrichProcessTaskContainer(
-            Id: taskId,
-            RetriesLeft: retriesLeft,
-            ProcessInstanceId: taskDto.ProcessInstanceId,
-            EnrichmentTaskVariables: taskVariablesModel,
-            VariableException: variableException
-        );
+        return new ParameterProcessTaskContainer(taskId, taskDto.ProcessInstanceId, retriesLeft, taskVariables, variableException);
     }
 
-    public static string GetVariableDtoValue(string key, string taskId, IDictionary<string, VariableValueDto> taskVariables)
+    public static string GetRequiredValue(string key, string taskId, IDictionary<string, VariableValueDto> taskVariables)
     {
-        if (!taskVariables.TryGetValue(key, out var targetVariableDto) ||
-            string.IsNullOrEmpty(targetVariableDto.Value.ToString()))
+        if (!taskVariables.TryGetValue(key, out var targetVariableDto) || string.IsNullOrWhiteSpace(targetVariableDto.Value?.ToString()))
         {
-            throw new CamundaTaskInvalidVariableException(
-                message: $"Task with id: {taskId} missing required variable {key}",
-                variableKey: key,
-                taskId: taskId
-            );
+            throw new CamundaTaskInvalidVariableException($"Task with id: {taskId} missing required variable {key}", key, taskId);
         }
 
-        return targetVariableDto.Value.ToString();
+        return targetVariableDto.Value!.ToString()!;
     }
 
-    private static CamundaEnrichmentVariables MapToVariablesModel(string taskId, LockedExternalTaskDto taskDto)
+    private static ParameterTaskVariables MapToVariablesModel(string taskId, LockedExternalTaskDto taskDto)
     {
-        var taskVariables = taskDto.Variables ??
-        throw new CamundaTaskInvalidVariableException(
-                message: $"Task with id: {taskId} doesnt contain any required variable.",
-                variableKey: "",
-                taskId: taskId
-        );
+        var taskVariables = taskDto.Variables
+            ?? throw new CamundaTaskInvalidVariableException($"Task with id: {taskId} does not contain required variables", "", taskId);
 
-        var orderIdPin = GetVariableDtoValue("orderId", taskId, taskVariables);
+        var orderId = GetRequiredValue("orderId", taskId, taskVariables);
+        var eventType = GetRequiredValue("eventType", taskId, taskVariables);
+        var requested = ParseOptionalList("requestedParameters", taskVariables);
 
-        if (orderIdPin.StartsWith("pin"))
+        return new ParameterTaskVariables(orderId, eventType, requested);
+    }
+
+    private static IReadOnlyList<string> ParseOptionalList(string key, IDictionary<string, VariableValueDto> taskVariables)
+    {
+        if (!taskVariables.TryGetValue(key, out var dto) || dto.Value is null)
         {
-            if (orderIdPin.Length <= 3)
+            return [];
+        }
+
+        var raw = dto.Value.ToString();
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return [];
+        }
+
+        if (dto.Value is JArray jArray)
+        {
+            return jArray.Values<string>().Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
+        if (raw.StartsWith("["))
+        {
+            try
             {
-                throw new CamundaTaskInvalidVariableException(
-               message: $"Task with id: {taskId} has invalid orderId variable value: {orderIdPin}. Missing order id.",
-               variableKey: "orderId",
-               taskId: taskId,
-               invalidVariableValue: orderIdPin
-           );
+                var arr = JsonConvert.DeserializeObject<List<string>>(raw);
+                if (arr is not null)
+                {
+                    return arr.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                }
             }
-
-            orderIdPin = orderIdPin[3..];
+            catch
+            {
+                // fallback to csv parsing
+            }
         }
 
-        if (!long.TryParse(orderIdPin, out var orderIdLong))
-        {
-            throw new CamundaTaskInvalidVariableException(
-               message: $"Task with id: {taskId} has invalid orderId variable value type: {orderIdPin}. Expecxted: long",
-               variableKey: "orderId",
-               taskId: taskId,
-               invalidVariableValue: orderIdPin
-           );
-        }
-
-        var eventType = GetVariableDtoValue("eventType", taskId, taskVariables);
-        OrderStateCode eventStateCode = default;
-        try
-        {
-            eventStateCode = JsonConvert.DeserializeObject<OrderStateCode>(
-                value: $"\"{eventType}\"",
-                settings: _serializerSettings
-            );
-        }
-        catch (Exception ex)
-        {
-            throw new CamundaTaskInvalidVariableException(
-               message: $"Task with id: {taskId} has unsupported eventType variable value type: {orderIdPin}",
-               variableKey: "eventType",
-               taskId: taskId,
-               invalidVariableValue: eventType,
-               innerException: ex
-           );
-        }
-
-        return new CamundaEnrichmentVariables(
-            OrderId: orderIdLong,
-            EventType: eventStateCode
-        );
+        return raw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                  .Distinct(StringComparer.OrdinalIgnoreCase)
+                  .ToList();
     }
 }

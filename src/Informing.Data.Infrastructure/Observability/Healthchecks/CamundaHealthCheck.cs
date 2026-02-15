@@ -5,38 +5,19 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Informing.Data.Infrastructure.Observability.Healthchecks;
 
-public class CamundaHealthCheck : IHealthCheck
+public class CamundaHealthCheck([FromKeyedServices(CamundaWorkerTag.ParameterService)] ICamundaClient camundaClient) : IHealthCheck
 {
-    private readonly ICamundaClient _camundaClient;
-
-    public CamundaHealthCheck(
-        [FromKeyedServices(CamundaWorkerTag.PortIn)]
-        ICamundaClient camundaClient
-    )
-    {
-        _camundaClient = camundaClient;
-    }
-
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
         {
-            bool camundaConnected = await _camundaClient.CheckConnection(cancellationToken);
-
-            if (!camundaConnected)
-            {
-                return new HealthCheckResult(
-                status: context.Registration.FailureStatus);
-            }
-
-            return HealthCheckResult.Healthy();
+            return await camundaClient.CheckConnection(cancellationToken)
+                ? HealthCheckResult.Healthy()
+                : new HealthCheckResult(context.Registration.FailureStatus);
         }
         catch (Exception ex)
         {
-            return new HealthCheckResult(
-                status: context.Registration.FailureStatus,
-                description: ex.Message,
-                exception: ex);
+            return new HealthCheckResult(context.Registration.FailureStatus, ex.Message, ex);
         }
     }
 }

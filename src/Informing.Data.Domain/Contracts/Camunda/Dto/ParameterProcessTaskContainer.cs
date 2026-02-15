@@ -2,10 +2,10 @@ using Informing.Data.Domain.Exceptions.Infrastructure.Camunda;
 
 namespace Informing.Data.Domain.Contracts.Camunda.Dto;
 
-public record EnrichProcessTaskContainer(
+public sealed record ParameterProcessTaskContainer(
     string Id,
     string ProcessInstanceId,
     int RetriesLeft,
-    CamundaEnrichmentVariables? EnrichmentTaskVariables,
+    ParameterTaskVariables? Variables,
     CamundaTaskInvalidVariableException? VariableException = null
 );
