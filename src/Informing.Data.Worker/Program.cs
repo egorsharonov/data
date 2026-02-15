@@ -50,7 +50,7 @@ public sealed class Program
 
                 services
                     .AddTCPHealthchecks()
-                    .AddCheck<CamundaHealthCheck>("Camunda", HealthStatus.Unhealthy, TimeSpan.FromMilliseconds(5000));
+                    .AddCheck<CamundaHealthCheck>("Camunda", HealthStatus.Unhealthy, timeout: TimeSpan.FromMilliseconds(5000));
             });
 
         await hostBuilder.Build().RunAsync();
